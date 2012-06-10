@@ -616,13 +616,29 @@ class Tpl{
 			$html = str_replace( array('$value','$key','$counter'), array('$value'.$loop_level,'$key'.$loop_level,'$counter'.$loop_level), $html );
 		
 		// if it is a variable
-		if( preg_match_all('/(\$[a-z_A-Z][\.\[\]\"\'a-zA-Z_0-9]*)/', $html, $matches ) ){
+		if( preg_match_all('/(\$[a-z_A-Z][\.\[\]\"\'a-zA-Z_0-9]*[^"=\'])/', $html, $matches ) ){
 
 			// substitute . and [] with [" "]
 			for( $i=0;$i<count($matches[1]);$i++ ){
 				
 				$rep = preg_replace( '/\[(\${0,1}[a-zA-Z_0-9]*)\]/', '["$1"]', $matches[1][$i] );
-				$rep = preg_replace( '/\.(\${0,1}[a-zA-Z_0-9]*)/', '["$1"]', $rep );
+                $rep = preg_replace( '/\.(\${0,1}[a-zA-Z_0-9]*)/', '["$1"]', $rep );
+
+                // Ugly ugly hack to nest variables in tags.  Here's the logic behind this:
+                // If there is a " in the parent string, then we can't have a " in the replaced string,
+                // so we search the string before the replacable string and see if there are id
+                // odd number of "'s minus the number of escape quotes, and if there are, we are
+                // probably in a nested variable.
+                if (   strpos($rep, '"') !== false
+                    && !$echo || (strpos($html, $matches[0][$i]) && ((
+                        substr_count($html, '"', 0, strrpos($html, $matches[0][$i])) // Quotes
+                      - substr_count($html, '\\"', 0, strrpos($html, $matches[0][$i])) // Escaped quotes
+                    ) % 2) == 1)
+                )
+                {
+                    $rep = '{' . $rep . '}';
+                }
+
 				$html = str_replace( $matches[0][$i], $rep, $html );
 
 			}
@@ -641,7 +657,6 @@ class Tpl{
 				// if is an assignment it doesn't add echo
 				if( $echo )
 						$html = "echo " . $html;
-
 			}
 
 		}
