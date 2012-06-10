@@ -401,7 +401,7 @@ class Tpl{
 				$actual_folder = substr( $template_directory, strlen(static::$conf['tpl_dir']) );
 
 				//get the included template
-				$include_template = $actual_folder . $this->_var_replace( $matches[ 1 ], $loop_level );
+				$include_template = $actual_folder . $this->_var_replace( $matches[ 1 ], $loop_level, false );
 
 				// reduce the path
 				$include_template = preg_replace('/\w+\/\.\.\//', '', $include_template );
